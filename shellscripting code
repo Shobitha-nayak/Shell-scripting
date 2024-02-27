@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Function to validate input options (case insensitive)
+validate_input() {
+    local input="$1"
+    local options="$2"
+    input=$(echo "$input" | tr '[:upper:]' '[:lower:]')  # Convert input to lowercase
+    for option in $options; do
+        option=$(echo "$option" | tr '[:upper:]' '[:lower:]')  # Convert option to lowercase
+        if [[ "$input" == "$option" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Function to update the conf file
+update_conf() {
+    local component="$1"
+    local scale="$2"
+    local view="$3"
+    local count="$4"
+
+    local filename="sig.conf"
+    local temp_file="temp.conf"
+
+    # Interpret view input
+    if [[ "$view" == "auction" ]]; then
+        view="vdopiasample"
+    elif [[ "$view" == "bid" ]]; then
+        view="vdopiasample-bid"
+    fi
+
+# Constructing the line to be replaced
+    local line="$view ; $scale ; $component ; ETL ; vdopia-etl= $count"
+
+    # Debugging statement to show the line being appended
+    echo "Appending line: $line to $filename"
+
+    # Append the line to the conf file
+    echo "$line" > "$filename"
+
+    echo "Updated $filename with the following line:"
+    echo "$line"
+}
+
+# Main script starts here
+
+# Ask for user input
+read -p "Enter Component Name [INGESTOR/JOINER/WRANGLER/VALIDATOR]: " component
+until validate_input "$component" "INGESTOR JOINER WRANGLER VALIDATOR"; do
+    read -p "Invalid input. Enter Component Name [INGESTOR/JOINER/WRANGLER/VALIDATOR]: " component
+done
+
+read -p "Enter Scale [MID/HIGH/LOW]: " scale
+until validate_input "$scale" "MID HIGH LOW"; do
+    read -p "Invalid input. Enter Scale [MID/HIGH/LOW]: " scale
+done
+
+read -p "Enter View [Auction/Bid]: " view
+until validate_input "$view" "Auction Bid"; do
+    read -p "Invalid input. Enter View [Auction/Bid]: " view
+done
+read -p "Enter Count [single digit number]: " count
+until [[ "$count" =~ ^[0-9]$ ]]; do
+    read -p "Invalid input. Enter Count [single digit number]: " count
+done
+
+# Call the function to update the conf file
+update_conf "$component" "$scale" "$view" "$count"
